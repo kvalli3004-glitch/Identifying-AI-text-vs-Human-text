@@ -1,11 +1,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not set. Please configure it in your environment variables.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export async function analyzeTextWithGemini(text: string): Promise<AnalysisResult> {
+  const ai = getAI();
   const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-3-flash-preview",
     contents: [
       {
         role: "user",

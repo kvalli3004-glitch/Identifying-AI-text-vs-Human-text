@@ -52,12 +52,17 @@ export async function runParallelAnalysis(
       return { modelId, result, confidence: 0.85 + Math.random() * 0.1 };
     } catch (error) {
       console.error(`Error analyzing with ${modelId}:`, error);
-      // Return a failed result or handle accordingly
-      throw error;
+      return null;
     }
   });
 
-  const modelResults = await Promise.all(analysisPromises);
+  const results = await Promise.all(analysisPromises);
+  const modelResults = results.filter((r): r is { modelId: ModelOption; result: AnalysisResult; confidence: number } => r !== null);
+  
+  if (modelResults.length === 0) {
+    throw new Error("All analysis models failed. Please check your API configuration.");
+  }
+
   if (onStepUpdate) onStepUpdate('parallel-run', 'completed');
 
   if (onStepUpdate) onStepUpdate('aggregate', 'processing');

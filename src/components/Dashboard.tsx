@@ -149,7 +149,7 @@ export const Dashboard: React.FC = () => {
       setIsAnalyzing(false);
     } catch (err) {
       setIsAnalyzing(false);
-      setError('Analysis failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Analysis failed. Please try again.');
       addLog('error', `Prediction failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
