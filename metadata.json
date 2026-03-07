@@ -1,0 +1,5 @@
+{
+  "name": "AI vs Human Text Detection Dashboard",
+  "description": "An advanced AI-powered dashboard for identifying and analyzing AI-generated vs human-written text with sentence-level highlighting, visualizations, and detailed explanations.",
+  "requestFramePermissions": []
+}
