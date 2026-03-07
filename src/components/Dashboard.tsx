@@ -53,8 +53,9 @@ export const Dashboard: React.FC = () => {
   const fetchHistory = async () => {
     try {
       const res = await fetch('/api/history');
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
-      setHistory(data);
+      setHistory(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch history', err);
     }
@@ -63,8 +64,9 @@ export const Dashboard: React.FC = () => {
   const fetchLogs = async () => {
     try {
       const res = await fetch('/api/logs');
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
-      setLogs(data);
+      setLogs(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to fetch logs', err);
     }
