@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Trash2,
   BrainCircuit,
+  Cpu,
   X
 } from 'lucide-react';
 import { HistoryRecord, Section, ModelOption, ModelMetadata } from '../types';

@@ -381,7 +381,10 @@ export const Dashboard: React.FC = () => {
                   {/* Highlighted Text Analysis Section */}
                   <div className="p-8 rounded-2xl bg-white border border-zinc-200 shadow-sm">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Highlighted Analysis</h3>
+                      <div className="flex flex-col gap-1">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Human-Written Analysis</h3>
+                        <p className="text-[10px] text-zinc-400 italic">Segments are highlighted in green (Human) or red (AI) based on analysis.</p>
+                      </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -400,17 +403,18 @@ export const Dashboard: React.FC = () => {
                           key={i}
                           className={`relative group inline px-1.5 py-0.5 rounded-md transition-all cursor-help mx-0.5 ${
                             segment.label === 'ai' 
-                              ? 'bg-red-100 text-red-900 border-b-2 border-red-300 hover:bg-red-200' 
-                              : 'bg-emerald-100 text-emerald-900 border-b-2 border-emerald-300 hover:bg-emerald-200'
+                              ? 'bg-red-500/10 text-red-900 border-b-2 border-red-500/30 hover:bg-red-500/20' 
+                              : 'bg-emerald-500/10 text-emerald-900 border-b-2 border-emerald-500/30 hover:bg-emerald-500/20'
                           }`}
                         >
                           {segment.text}
-                          <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-zinc-900 text-[11px] font-bold text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-2xl scale-95 group-hover:scale-100">
+                          <span className="absolute -top-12 left-1/2 -translate-x-1/2 px-4 py-2 bg-zinc-900 text-[11px] font-bold text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-2xl scale-90 group-hover:scale-100 flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full ${segment.label === 'ai' ? 'bg-red-500' : 'bg-emerald-500'}`} />
                             <span className={segment.label === 'ai' ? 'text-red-400' : 'text-emerald-400'}>
-                              {segment.label.toUpperCase()}
+                              {segment.label === 'ai' ? 'AI Generated' : 'Human Written'}
                             </span>
-                            <span className="mx-2 text-white/20">|</span>
-                            {Math.round(segment.score * 100)}% Confidence
+                            <span className="text-white/20">|</span>
+                            <span>Score: {Math.round(segment.score * 100)}%</span>
                           </span>
                         </span>
                       ))}
@@ -551,7 +555,8 @@ export const Dashboard: React.FC = () => {
             onDeleteLog={deleteLog} 
             onClearLogs={clearLogs} 
           />
-        );      case 'history':
+        );
+      case 'history':
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">

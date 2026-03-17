@@ -4,7 +4,7 @@ export interface AnalysisResult {
   overallScore: number; // 0 to 100 (AI percentage)
   segments: AnalysisSegment[];
   explanation: string;
-  classification: 'AI-GENERATED' | 'HUMAN-WRITTEN' | 'UNCERTAIN';
+  classification: 'AI-GENERATED' | 'HUMAN-WRITTEN' | 'UNCERTAIN' | 'AI-generated' | 'Human-written';
   metrics: {
     perplexity: number;
     burstiness: number;

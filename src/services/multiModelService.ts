@@ -1,5 +1,7 @@
 import { AnalysisResult, ModelOption, ParallelAnalysisResult } from "../types";
 import { analyzeTextWithGemini } from "./geminiService";
+import { analyzeTextWithRoBERTa } from "./robertaService";
+import { enforceStrictLabel } from "./validationService";
 
 // Mock analysis for models that don't have a real implementation yet
 async function mockAnalyze(text: string, modelId: ModelOption): Promise<AnalysisResult> {
@@ -11,10 +13,10 @@ async function mockAnalyze(text: string, modelId: ModelOption): Promise<Analysis
   
   return {
     overallScore: score,
-    classification: score > 70 ? 'AI-GENERATED' : score < 30 ? 'HUMAN-WRITTEN' : 'UNCERTAIN',
+    classification: enforceStrictLabel(score),
     segments: [
       {
-        text: text.slice(0, 100) + "...",
+        text: text,
         score: isAI ? 0.9 : 0.1,
         label: isAI ? 'ai' : 'human',
         explanation: `Analysis by ${modelId} suggests ${isAI ? 'AI' : 'Human'} origin based on linguistic patterns.`
@@ -46,6 +48,8 @@ export async function runParallelAnalysis(
       let result: AnalysisResult;
       if (modelId === 'gemini') {
         result = await analyzeTextWithGemini(text);
+      } else if (modelId === 'roberta') {
+        result = await analyzeTextWithRoBERTa(text);
       } else {
         result = await mockAnalyze(text, modelId);
       }
@@ -72,10 +76,8 @@ export async function runParallelAnalysis(
   const totalWeight = modelResults.reduce((acc, curr) => acc + curr.confidence, 0);
   const weightedScore = modelResults.reduce((acc, curr) => acc + (curr.result.overallScore * curr.confidence), 0) / totalWeight;
 
-  // Determine final classification based on weighted score
-  let finalClassification: 'AI-GENERATED' | 'HUMAN-WRITTEN' | 'UNCERTAIN' = 'UNCERTAIN';
-  if (weightedScore > 60) finalClassification = 'AI-GENERATED';
-  else if (weightedScore < 40) finalClassification = 'HUMAN-WRITTEN';
+  // Determine final classification based on weighted score (Deterministic Override)
+  const finalClassification = enforceStrictLabel(weightedScore);
 
   // Combine explanations
   const finalExplanation = `Consensus reached via parallel analysis of ${models.length} models. ` + 
