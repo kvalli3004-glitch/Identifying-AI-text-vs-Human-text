@@ -53,7 +53,11 @@ export async function runParallelAnalysis(
       } else {
         result = await mockAnalyze(text, modelId);
       }
-      return { modelId, result, confidence: 0.85 + Math.random() * 0.1 };
+      const confidence = result.overallScore > 50 
+        ? result.overallScore / 100 
+        : (100 - result.overallScore) / 100;
+
+      return { modelId, result, confidence };
     } catch (error) {
       console.error(`Error analyzing with ${modelId}:`, error);
       return null;

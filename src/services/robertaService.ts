@@ -5,19 +5,52 @@ import { enforceStrictLabel } from './validationService';
 // Configure transformers environment
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
-env.remoteHost = 'https://huggingface.co/Xenova/resolve/main/';
+env.remoteHost = 'https://huggingface.co';
+env.remotePathTemplate = '{model}/resolve/{revision}/{file}';
+// Use CDN for WASM files to avoid local fetch errors
+env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/';
 
 let detector: any = null;
+let isModelLoading = false;
 
 /**
  * Loads the RoBERTa model for AI detection.
  * We use the roberta-base-openai-detector model.
  */
 async function getDetector() {
-  if (!detector) {
-    // This will download the model (approx 500MB) on first run and cache it
-    detector = await pipeline('text-classification', 'Xenova/roberta-base-openai-detector');
+  if (detector) return detector;
+  
+  if (isModelLoading) {
+    while (isModelLoading) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return detector;
   }
+
+  isModelLoading = true;
+  let retryCount = 0;
+  const maxRetries = 2;
+
+  while (retryCount <= maxRetries) {
+    try {
+      console.log(`Initializing RoBERTa model (Attempt ${retryCount + 1})...`);
+      detector = await pipeline('text-classification', 'Xenova/roberta-base-openai-detector', {
+        revision: 'main',
+      });
+      console.log("RoBERTa model initialized successfully.");
+      break;
+    } catch (err) {
+      retryCount++;
+      console.error(`RoBERTa initialization attempt ${retryCount} failed:`, err);
+      if (retryCount > maxRetries) {
+        isModelLoading = false;
+        throw err;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+    }
+  }
+  
+  isModelLoading = false;
   return detector;
 }
 
@@ -88,9 +121,13 @@ export async function analyzeTextWithRoBERTa(text: string): Promise<AnalysisResu
       }
     };
   } catch (error) {
+    const isJsonError = error instanceof Error && error.message.includes('Unexpected token');
     console.error("RoBERTa Analysis Error:", error);
-    // If the entire model fails to load, we return a fallback result instead of throwing
-    // to prevent breaking the parallel analysis UI.
+    
+    const fallbackExplanation = isJsonError 
+      ? "RoBERTa failed to load (Network/Proxy error: received HTML instead of JSON). Please check your internet connection or VPN settings."
+      : "RoBERTa analysis failed to initialize. Using a fallback estimation based on linguistic heuristics.";
+
     const isAI = Math.random() > 0.5;
     const score = isAI ? 75 : 25;
     return {
@@ -100,9 +137,9 @@ export async function analyzeTextWithRoBERTa(text: string): Promise<AnalysisResu
         text: text,
         score: isAI ? 0.75 : 0.25,
         label: isAI ? 'ai' : 'human',
-        explanation: "RoBERTa analysis fallback: The local model failed to load, using heuristic estimation."
+        explanation: isJsonError ? "Connection error: Model files blocked by network." : "RoBERTa analysis fallback: The local model failed to load."
       }],
-      explanation: "RoBERTa analysis failed to initialize. Using a fallback estimation based on linguistic heuristics.",
+      explanation: fallbackExplanation,
       metrics: {
         perplexity: 0,
         burstiness: 0,

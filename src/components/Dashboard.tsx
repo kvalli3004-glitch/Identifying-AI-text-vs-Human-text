@@ -12,7 +12,9 @@ import {
   ShieldCheck,
   Layers,
   Trash2,
-  History
+  History,
+  Copy,
+  Check
 } from 'lucide-react';
 import { AnalysisResult, ModelOption, HistoryRecord, SystemLog, Section, ParallelAnalysisResult, ProcessingStep } from '../types';
 import { analyzeTextWithGemini } from '../services/geminiService';
@@ -38,6 +40,7 @@ export const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isParallelMode, setIsParallelMode] = useState(true);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [pipelineSteps, setPipelineSteps] = useState<ProcessingStep[]>([
     { id: 'preprocess', label: 'Preprocessing', status: 'pending' },
     { id: 'parallel-run', label: 'Running Models in Parallel', status: 'pending' },
@@ -325,123 +328,177 @@ export const Dashboard: React.FC = () => {
               )}
             </AnimatePresence>
 
-            {/* Simplified Results Section */}
+            {/* Enhanced Results Section */}
             <AnimatePresence>
               {result && (
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
+                  className="space-y-8"
                 >
-                  {/* Classification & Probability Header */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-2 p-8 rounded-2xl bg-white border border-zinc-200 shadow-sm flex flex-col justify-center">
-                      <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest mb-2">Final Classification</div>
-                      <div className={`text-4xl font-black ${
-                        result.classification === 'AI-GENERATED' ? 'text-red-500' : 
-                        result.classification === 'HUMAN-WRITTEN' ? 'text-emerald-500' : 'text-orange-500'
-                      }`}>
-                        {result.classification}
+                  {/* Header from Image */}
+                  <div className="flex flex-col items-center text-center mb-12">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="p-3 bg-blue-500/10 rounded-2xl">
+                        <BrainCircuit className="w-10 h-10 text-blue-600" />
                       </div>
-                      <p className="mt-4 text-sm text-zinc-600 leading-relaxed italic">
-                        {result.explanation}
-                      </p>
+                      <h2 className="text-4xl font-black tracking-tight text-zinc-900 uppercase">
+                        AI <span className="text-zinc-400">vs</span> HUMAN <span className="text-blue-600">TEXT DETECTOR</span>
+                      </h2>
                     </div>
-                    
-                    <div className="p-8 rounded-2xl bg-white border border-zinc-200 shadow-sm space-y-6">
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest mb-2">
-                          <span className="text-red-500">AI Probability</span>
-                          <span className="text-zinc-900">{Math.round(result.overallScore)}%</span>
-                        </div>
-                        <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${result.overallScore}%` }}
-                            className="h-full bg-red-500"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest mb-2">
-                          <span className="text-emerald-500">Human Probability</span>
-                          <span className="text-zinc-900">{100 - Math.round(result.overallScore)}%</span>
-                        </div>
-                        <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${100 - result.overallScore}%` }}
-                            className="h-full bg-emerald-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    <p className="text-sm font-medium text-zinc-500">
+                      Highlighting AI-Generated Text in <span className="text-red-500 font-bold">Red</span> and Human-Written Text in <span className="text-emerald-500 font-bold">Green</span>
+                    </p>
                   </div>
 
-                  {/* Highlighted Text Analysis Section */}
-                  <div className="p-8 rounded-2xl bg-white border border-zinc-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Human-Written Analysis</h3>
-                        <p className="text-[10px] text-zinc-400 italic">Segments are highlighted in green (Human) or red (AI) based on analysis.</p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-red-500" />
-                          <span className="text-[10px] text-zinc-400 uppercase tracking-tighter">AI-Generated</span>
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* Left Column: Highlighted Text */}
+                    <div className="lg:col-span-7 space-y-6">
+                      <div className="p-10 rounded-[2.5rem] bg-white border border-zinc-200 shadow-xl shadow-zinc-200/50 min-h-[600px] relative">
+                        <div className="flex justify-between items-center mb-8">
+                          <h3 className="text-2xl font-black text-zinc-900">Analysis Preview</h3>
+                          <button
+                            onClick={() => {
+                              const taggedText = result.segments.map(s => 
+                                s.label === 'ai' ? `[AI]${s.text}[/AI]` : `[HUMAN]${s.text}[/HUMAN]`
+                              ).join('');
+                              navigator.clipboard.writeText(taggedText);
+                              setCopied(true);
+                              setTimeout(() => setCopied(false), 2000);
+                            }}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white rounded-2xl text-xs font-bold hover:bg-zinc-800 transition-all shadow-lg active:scale-95"
+                          >
+                            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                            {copied ? 'Copied!' : 'Copy Highlighted Text'}
+                          </button>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                          <span className="text-[10px] text-zinc-400 uppercase tracking-tighter">Human-Written</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-8 rounded-xl bg-zinc-50 border border-zinc-100 font-serif text-xl leading-[1.8] text-zinc-800">
-                      {result.segments.map((segment, i) => (
-                        <span 
-                          key={i}
-                          className={`relative group inline px-1.5 py-0.5 rounded-md transition-all cursor-help mx-0.5 ${
-                            segment.label === 'ai' 
-                              ? 'bg-red-500/10 text-red-900 border-b-2 border-red-500/30 hover:bg-red-500/20' 
-                              : 'bg-emerald-500/10 text-emerald-900 border-b-2 border-emerald-500/30 hover:bg-emerald-500/20'
-                          }`}
-                        >
-                          {segment.text}
-                          <span className="absolute -top-12 left-1/2 -translate-x-1/2 px-4 py-2 bg-zinc-900 text-[11px] font-bold text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap z-50 shadow-2xl scale-90 group-hover:scale-100 flex items-center gap-3">
-                            <div className={`w-2 h-2 rounded-full ${segment.label === 'ai' ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                            <span className={segment.label === 'ai' ? 'text-red-400' : 'text-emerald-400'}>
-                              {segment.label === 'ai' ? 'AI Generated' : 'Human Written'}
+                        
+                        <div className="font-serif text-xl leading-[2.2] text-zinc-800">
+                          {result.segments.map((segment, i) => (
+                            <span 
+                              key={i}
+                              className={`relative group inline px-1.5 py-1 rounded-xl transition-all cursor-help mx-0.5 border-b-2 ${
+                                segment.label === 'ai' 
+                                  ? 'bg-red-100 text-red-950 border-red-300 hover:bg-red-200 hover:border-red-400' 
+                                  : 'bg-emerald-100 text-emerald-950 border-emerald-300 hover:bg-emerald-200 hover:border-emerald-400'
+                              }`}
+                            >
+                              {segment.text}
+                              {/* Tooltip */}
+                              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 px-5 py-4 bg-zinc-900 text-[12px] leading-relaxed text-white rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-all pointer-events-none w-72 z-50 shadow-2xl scale-90 group-hover:scale-100 border border-white/10 backdrop-blur-xl">
+                                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-white/10">
+                                  <div className={`w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)] ${segment.label === 'ai' ? 'bg-red-500 shadow-red-500/50' : 'bg-emerald-500 shadow-emerald-500/50'}`} />
+                                  <span className={`font-black uppercase tracking-widest ${segment.label === 'ai' ? 'text-red-400' : 'text-emerald-400'}`}>
+                                    {segment.label === 'ai' ? 'AI Pattern' : 'Human Pattern'}
+                                  </span>
+                                  <div className="ml-auto px-2 py-0.5 rounded-md bg-white/5 text-[10px] font-black">
+                                    {Math.round(segment.score * 100)}% CONFIDENCE
+                                  </div>
+                                </div>
+                                <p className="text-zinc-300 font-medium">
+                                  {segment.explanation}
+                                </p>
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-[10px] border-transparent border-t-zinc-900" />
+                              </span>
                             </span>
-                            <span className="text-white/20">|</span>
-                            <span>Score: {Math.round(segment.score * 100)}%</span>
-                          </span>
-                        </span>
-                      ))}
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="mt-8 space-y-3">
-                      <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-300 mb-4">Detailed Segment Breakdown</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {result.segments.map((segment, i) => (
-                          <div 
-                            key={i}
-                            className={`p-4 rounded-xl border transition-all hover:bg-zinc-50 ${
-                              segment.label === 'ai' 
-                                ? 'bg-red-50/50 border-red-100' 
-                                : 'bg-emerald-50/50 border-emerald-100'
-                            }`}
-                          >
-                            <div className="flex justify-between items-center mb-2">
-                              <span className={`text-[10px] font-black uppercase tracking-widest ${segment.label === 'ai' ? 'text-red-500' : 'text-emerald-500'}`}>
-                                Segment {i + 1} • {Math.round(segment.score * 100)}% {segment.label === 'ai' ? 'AI' : 'Human'}
-                              </span>
-                            </div>
-                            <p className="text-xs text-zinc-600 leading-relaxed italic">
-                              "{segment.explanation}"
-                            </p>
+                    {/* Right Column: Sidebar Results */}
+                    <div className="lg:col-span-5 space-y-6">
+                      <div className="p-8 rounded-[2.5rem] bg-white border border-zinc-200 shadow-xl shadow-zinc-200/50 space-y-8">
+                        <div className="flex items-center gap-3 pb-6 border-b border-zinc-100">
+                          <div className="w-2 h-8 bg-blue-600 rounded-full" />
+                          <h3 className="text-xl font-black text-zinc-900 uppercase tracking-tight">Analysis Results</h3>
+                        </div>
+
+                        {/* AI/Human Percentage Cards */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-6 rounded-3xl bg-red-50 border border-red-100 text-center">
+                            <div className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">AI-Generated</div>
+                            <div className="text-4xl font-black text-red-600">{Math.round(result.overallScore)}%</div>
                           </div>
-                        ))}
+                          <div className="p-6 rounded-3xl bg-emerald-50 border border-emerald-100 text-center">
+                            <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">Human-Written</div>
+                            <div className="text-4xl font-black text-emerald-600">{100 - Math.round(result.overallScore)}%</div>
+                          </div>
+                        </div>
+
+                        {/* Confidence Score Bar */}
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-end">
+                            <h4 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Confidence Score</h4>
+                            <span className="text-xl font-black text-zinc-900">
+                              {result.classification.toUpperCase().includes('AI') 
+                                ? Math.round(result.overallScore) 
+                                : Math.round(100 - result.overallScore)}%
+                            </span>
+                          </div>
+                          <div className="h-4 w-full bg-zinc-100 rounded-full overflow-hidden p-1 border border-zinc-200">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${result.classification.toUpperCase().includes('AI') ? result.overallScore : 100 - result.overallScore}%` }}
+                              className={`h-full rounded-full ${result.classification.toUpperCase().includes('AI') ? 'bg-red-500' : 'bg-emerald-500'}`}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Why Marked as AI? */}
+                        <div className="p-6 rounded-3xl bg-zinc-50 border border-zinc-100 space-y-4">
+                          <h4 className="text-xs font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            Why this was marked as AI?
+                          </h4>
+                          <ul className="space-y-3">
+                            {(result.segments.filter(s => s.label === 'ai').length > 0) ? (
+                              result.segments.filter(s => s.label === 'ai').slice(0, 4).map((s, i) => (
+                                <li key={i} className="text-xs text-zinc-500 flex gap-3 leading-relaxed">
+                                  <span className="text-red-400 font-bold">•</span>
+                                  {s.explanation}
+                                </li>
+                              ))
+                            ) : (
+                              <li className="text-xs text-zinc-400 italic">No significant AI patterns detected.</li>
+                            )}
+                          </ul>
+                        </div>
+
+                        {/* Why Marked as Human? */}
+                        <div className="p-6 rounded-3xl bg-emerald-50/30 border border-emerald-100 space-y-4">
+                          <h4 className="text-xs font-black text-zinc-900 uppercase tracking-widest flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Why this was marked as Human?
+                          </h4>
+                          <ul className="space-y-3">
+                            {(result.segments.filter(s => s.label === 'human').length > 0) ? (
+                              result.segments.filter(s => s.label === 'human').slice(0, 4).map((s, i) => (
+                                <li key={i} className="text-xs text-zinc-500 flex gap-3 leading-relaxed">
+                                  <span className="text-emerald-400 font-bold">•</span>
+                                  {s.explanation}
+                                </li>
+                              ))
+                            ) : (
+                              <li className="text-xs text-zinc-400 italic">No significant human markers detected.</li>
+                            )}
+                          </ul>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="p-6 rounded-3xl border border-zinc-100 space-y-4">
+                          <h4 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Legend</h4>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-4 rounded bg-red-500/20 border border-red-500/40" />
+                              <span className="text-xs font-bold text-zinc-600">AI-Generated Text</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-4 rounded bg-emerald-500/20 border border-emerald-500/40" />
+                              <span className="text-xs font-bold text-zinc-600">Human-Written Text</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -453,15 +510,24 @@ export const Dashboard: React.FC = () => {
                       animate={{ opacity: 1, y: 0 }}
                       className="p-8 rounded-2xl bg-white border border-zinc-200 shadow-sm"
                     >
-                      <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400 mb-6">Model Consensus Breakdown</h3>
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex flex-col gap-1">
+                          <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Model Consensus Breakdown</h3>
+                          <p className="text-[10px] text-zinc-400 italic">Different models use different logic (patterns vs. semantics), which is why they may disagree.</p>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-zinc-400 bg-zinc-50 px-3 py-1.5 rounded-lg border border-zinc-100">
+                          <Info className="w-3 h-3 text-blue-500" />
+                          <span>Certainty = How sure the model is about its own choice.</span>
+                        </div>
+                      </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr className="border-b border-zinc-100">
-                              <th className="py-4 px-4 text-[10px] uppercase text-zinc-400 font-bold">Model</th>
+                              <th className="py-4 px-4 text-[10px] uppercase text-zinc-400 font-bold">Model Name</th>
                               <th className="py-4 px-4 text-[10px] uppercase text-zinc-400 font-bold">Prediction</th>
-                              <th className="py-4 px-4 text-[10px] uppercase text-zinc-400 font-bold">Confidence</th>
-                              <th className="py-4 px-4 text-[10px] uppercase text-zinc-400 font-bold">AI Score</th>
+                              <th className="py-4 px-4 text-[10px] uppercase text-zinc-400 font-bold">Certainty</th>
+                              <th className="py-4 px-4 text-[10px] uppercase text-zinc-400 font-bold">AI Probability</th>
                             </tr>
                           </thead>
                           <tbody className="text-xs">
@@ -478,15 +544,20 @@ export const Dashboard: React.FC = () => {
                                     {m.result.overallScore > 50 ? 'AI Generated' : 'Human Written'}
                                   </span>
                                 </td>
-                                <td className="py-4 px-4 font-mono text-zinc-500">
+                                <td className="py-4 px-4 font-mono text-zinc-900 font-bold">
                                   {(m.confidence * 100).toFixed(1)}%
                                 </td>
                                 <td className="py-4 px-4">
-                                  <div className="w-full bg-zinc-100 h-1.5 rounded-full overflow-hidden">
-                                    <div 
-                                      className="h-full bg-blue-500" 
-                                      style={{ width: `${m.result.overallScore}%` }}
-                                    />
+                                  <div className="flex items-center gap-3">
+                                    <div className="flex-1 bg-zinc-100 h-1.5 rounded-full overflow-hidden min-w-[60px]">
+                                      <div 
+                                        className={`h-full ${m.result.overallScore > 50 ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                        style={{ width: `${m.result.overallScore}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-[10px] font-mono text-zinc-500 w-8">
+                                      {Math.round(m.result.overallScore)}%
+                                    </span>
                                   </div>
                                 </td>
                               </tr>
