@@ -9,6 +9,8 @@ env.remoteHost = 'https://huggingface.co';
 env.remotePathTemplate = '{model}/resolve/{revision}/{file}';
 // Use CDN for WASM files to avoid local fetch errors
 env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/';
+env.useBrowserCache = false;
+env.useCustomCache = false;
 
 let detector: any = null;
 let isModelLoading = false;
